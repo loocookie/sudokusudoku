@@ -58,7 +58,7 @@ function App() {
   return (
     <>
       <h1>Partition</h1>
-      <div className="game_container" style={{width: "min(90vmin, 450px)", maxWidth: "100%", maxHeight: "100%", display: "grid"}}>
+      <div className="game_container" style={{width: "min(80vmin, 450px)", maxWidth: "100%", maxHeight: "100%", display: "grid"}}>
         <div className="grid_container" style={{aspectRatio: 1 / 1, display: "grid", gridTemplateRows: "repeat(9, 1fr)", border: "4px solid black"}}>
           {partition.map((row, rowIndex) => (
             <div key={rowIndex} className="grid_row" style={{display: "grid", gridTemplateColumns: "repeat(9, 1fr)"}}>
@@ -68,7 +68,7 @@ function App() {
                     className="grid_cell"
                     onMouseEnter={() => setHoveredCell({row: rowIndex, col: columnIndex, part: partition[rowIndex][columnIndex]})}
                     onMouseLeave={() => setHoveredCell(null)}
-                    onMouseDown={() => setClickedCell({row: rowIndex, col: columnIndex})}
+                    onMouseDown={() => setClickedCell({row: rowIndex, col: columnIndex, part: partition[rowIndex][columnIndex]})}
                     style={{
                       display: "flex",
                       width: "100%",
@@ -89,12 +89,32 @@ function App() {
         </div>
         <div style={{display: "grid", gridTemplateColumns: "repeat(5, 1fr)", paddingTop: "20px", paddingBottom: "20px", gap: "10px"}}>
           {Array.from({length: 9}).map((_, index) => (
-            <button key={index + 1} onClick={() => setValues((prevValues) => {const newValues = prevValues.map((row) => [...row]); newValues[clickedCell.row][clickedCell.col] = `${index + 1}`; return newValues;})} style={{padding: "15px", fontSize: "16px", border: "1px solid gray"}}>
+            <button
+              key={index + 1}
+              onClick={() => {
+                if (clickedCell.row !== null) {
+                  setValues((prevValues) => {
+                    const newValues = prevValues.map((row) => [...row])
+                    newValues[clickedCell.row][clickedCell.col] = `${index + 1}`
+                    return newValues
+                  })
+                }}}
+              style={{padding: "15px", fontSize: "16px", border: "1px solid gray"}}>
               {index + 1}
             </button>
           ))}
-          <button key="delete" onClick={() => setValues((prevValues) => {const newValues = prevValues.map((row) => [...row]); newValues[clickedCell.row][clickedCell.col] = ""; return newValues;})} style={{padding: "15px", fontSize: "16px", border: "1px solid gray"}}>
-            Delete
+          <button
+            key="delete"
+            onClick={() => {
+              if (clickedCell.row !== null) {
+                setValues((prevValues) => {
+                  const newValues = prevValues.map((row) => [...row])
+                  newValues[clickedCell.row][clickedCell.col] = ""
+                  return newValues
+                })
+              }}}
+            style={{padding: "15px", fontSize: "16px", border: "1px solid gray"}}>
+            ⌫
           </button>
         </div>
       </div>
