@@ -2,55 +2,61 @@ import { useState, useEffect } from 'react'
 import './App.css'
 
 const partition = [
- [1, 1, 1, 1, 1, 1, 1, 1, 0],
- [3, 3, 3, 2, 2, 2, 2, 1, 0],
- [3, 4, 2, 2, 0, 0, 0, 0, 0],
- [3, 4, 2, 8, 8, 8, 8, 8, 0],
- [3, 4, 2, 8, 7, 8, 8, 8, 0],
- [3, 4, 2, 7, 7, 7, 7, 7, 7],
- [3, 4, 7, 7, 5, 5, 5, 5, 5],
- [3, 4, 6, 6, 6, 5, 6, 5, 5],
- [4, 4, 4, 6, 6, 6, 6, 6, 5]
+  [0, 0, 0, 0, 1, 1, 1, 1, 1],
+  [0, 2, 0, 2, 2, 2, 3, 3, 1],
+  [0, 2, 2, 2, 4, 2, 3, 1, 1],
+  [0, 5, 5, 5, 4, 2, 3, 3, 1],
+  [0, 5, 4, 4, 4, 4, 4, 3, 6],
+  [7, 5, 5, 8, 4, 3, 3, 3, 6],
+  [7, 7, 5, 8, 4, 8, 8, 8, 6],
+  [7, 5, 5, 8, 8, 8, 6, 8, 6],
+  [7, 7, 7, 7, 7, 6, 6, 6, 6]]
+
+const problem = [
+  [2, 0, 0, 0, 0, 7, 0, 0, 0],
+  [0, 0, 0, 2, 0, 3, 0, 0, 6],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 4, 0, 0, 0, 0, 3, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 3, 7, 0, 2, 0, 0, 6, 0],
+  [0, 0, 0, 7, 0, 0, 0, 0, 0],
+  [8, 0, 0, 0, 3, 0, 0, 1, 0],
+  [0, 2, 0, 5, 0, 9, 0, 0, 0]
 ]
 
 function App() {
   const [hoveredCell, setHoveredCell] = useState({row: null, col: null, part: null});
   const [clickedCell, setClickedCell] = useState({row: null, col: null, part: null})
-  const thickBorder = window.matchMedia('(prefers-color-scheme: dark)').matches ? "1px solid rgba(219, 219, 219, 1)" : "1px solid rgba(36, 36, 36, 1)"
-  const thinBorder = window.matchMedia('(prefers-color-scheme: dark)').matches ? "1px solid rgba(219, 219, 219, 0.2)" : "1px solid rgba(36, 36, 36, 0.2)"
-  const relatedBackground = window.matchMedia('(prefers-color-scheme: dark)').matches ? "rgba(219, 219, 219, 0.1)" : "rgba(36, 36, 36, 0.1)"
-  const defaultBackground = window.matchMedia('(prefers-color-scheme: dark)').matches ? "rgb(36, 36, 36)" : "white"
+  const thickBorder = window.matchMedia('(prefers-color-scheme: dark)').matches ? "2px solid rgb(219, 219, 219)" : "2px solid rgb(36, 36, 36)"
+  const thinBorder = window.matchMedia('(prefers-color-scheme: dark)').matches ? "2px solid rgb(108, 108, 108)" : "2px solid rgb(183, 183, 183)"
+  const relatedBackground = window.matchMedia('(prefers-color-scheme: dark)').matches ? "rgb(60, 60, 60)" : "rgb(231, 231, 231)"
+  const defaultBackground = window.matchMedia('(prefers-color-scheme: dark)').matches ? "rgb(36, 36, 36)" : "rgb(255, 255, 255)"
   const highlightBackground = window.matchMedia('(prefers-color-scheme: dark)').matches ? "rgb(69, 17, 0)" : "rgb(255, 223, 17)"
+  const writtenBackground = window.matchMedia('(prefers-color-scheme: dark)').matches ? "rgb(84, 84, 84)" : "rgb(207, 207, 207)"
 
-  var [values, setValues] = useState([
-    ["", "", "", "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", "", ""]
-  ])
+  var [values, setValues] = useState(problem.map((row) =>
+    row.map((n) => (n === 0 ? "" : `${n}`))
+  ))
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (clickedCell !== null) {
-        if (event.key >= "1" && event.key <= "9"){
-          setValues((prevValues) => {
-            const newValues = prevValues.map((row) => [...row]);
-            newValues[clickedCell.row][clickedCell.col] = event.key;
-            return newValues;
-          });
-        }
-        else {
-          if (event.key === "Backspace" || event.key === "Delete") {
+      if (clickedCell.row !== null) {
+        if (problem[clickedCell.row][clickedCell.col] === 0){
+          if (event.key >= "1" && event.key <= "9"){
             setValues((prevValues) => {
               const newValues = prevValues.map((row) => [...row]);
-              newValues[clickedCell.row][clickedCell.col] = "";
+              newValues[clickedCell.row][clickedCell.col] = event.key;
               return newValues;
             });
+          }
+          else {
+            if (event.key === "Backspace" || event.key === "Delete") {
+              setValues((prevValues) => {
+                const newValues = prevValues.map((row) => [...row]);
+                newValues[clickedCell.row][clickedCell.col] = "";
+                return newValues;
+              });
+            }
           }
         }
       }
@@ -80,11 +86,13 @@ function App() {
                       alignItems: "center",
                       justifyContent: "center",
                       boxSizing: "border-box",  
-                      backgroundColor: (clickedCell?.row === rowIndex && clickedCell.col === columnIndex) ? highlightBackground : ((hoveredCell?.row === rowIndex || hoveredCell?.col === columnIndex || hoveredCell?.part === partition[rowIndex][columnIndex]) ? relatedBackground : defaultBackground),
+                      backgroundColor: problem[rowIndex][columnIndex] === 0 ? (clickedCell?.row === rowIndex && clickedCell.col === columnIndex) ? highlightBackground : ((hoveredCell?.row === rowIndex || hoveredCell?.col === columnIndex || hoveredCell?.part === partition[rowIndex][columnIndex]) ? relatedBackground : defaultBackground) : writtenBackground,
                       borderLeft: (columnIndex === 0 || partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex - 1]) ? thickBorder : thinBorder,
                       borderRight: (columnIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex + 1]) ? thickBorder : thinBorder,
                       borderTop: (rowIndex === 0 || partition[rowIndex][columnIndex] !== partition[rowIndex - 1][columnIndex]) ? thickBorder : thinBorder,
-                      borderBottom: (rowIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex + 1][columnIndex]) ? thickBorder : thinBorder}}>
+                      borderBottom: (rowIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex + 1][columnIndex]) ? thickBorder : thinBorder,
+                      fontSize: "min(4.27vmin, 24px)",
+                      fontWeight: "bold"}}>
                   {values[rowIndex][columnIndex]}
                 </div>
               ))}
@@ -98,13 +106,15 @@ function App() {
               key={index + 1}
               onClick={() => {
                 if (clickedCell.row !== null) {
-                  setValues((prevValues) => {
-                    const newValues = prevValues.map((row) => [...row])
-                    newValues[clickedCell.row][clickedCell.col] = `${index + 1}`
-                    return newValues
-                  })
+                  if (problem[clickedCell.row][clickedCell.col] === 0) {
+                    setValues((prevValues) => {
+                      const newValues = prevValues.map((row) => [...row])
+                      newValues[clickedCell.row][clickedCell.col] = `${index + 1}`
+                      return newValues
+                    })
+                  }
                 }}}
-              style={{padding: "15px", fontSize: "16px", border: "1px solid gray"}}>
+              style={{padding: "12px", fontSize: "min(3.2vmin, 18px)", fontWeight: "bold", border: thinBorder, background: defaultBackground}}>
               {index + 1}
             </button>
           ))}
@@ -112,13 +122,15 @@ function App() {
             key="delete"
             onClick={() => {
               if (clickedCell.row !== null) {
-                setValues((prevValues) => {
-                  const newValues = prevValues.map((row) => [...row])
-                  newValues[clickedCell.row][clickedCell.col] = ""
-                  return newValues
-                })
+                if (problem[clickedCell.row][clickedCell.col] === 0) {
+                  setValues((prevValues) => {
+                    const newValues = prevValues.map((row) => [...row])
+                    newValues[clickedCell.row][clickedCell.col] = ""
+                    return newValues
+                  })
+                }
               }}}
-            style={{padding: "15px", fontSize: "16px", border: "1px solid gray"}}>
+            style={{padding: "12px", fontSize: "min(3.2vmin, 18px)", fontWeight: "bold", border: thinBorder, background: defaultBackground}}>
             ⌫
           </button>
         </div>
