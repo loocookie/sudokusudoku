@@ -14,7 +14,8 @@ const partition = [
 ]
 
 function App() {
-  const [hoveredCell, setHoveredCell] = useState({ row: null, col: null, part: null });
+  const [hoveredCell, setHoveredCell] = useState({row: null, col: null, part: null});
+  const [clickedCell, setClickedCell] = useState({row: null, col: null, part: null})
 
   var [values, setValues] = useState([
     ["", "", "", "", "", "", "", "", ""],
@@ -30,12 +31,11 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (hoveredCell !== null) {
+      if (clickedCell !== null) {
         if (event.key >= "1" && event.key <= "9"){
-          console.log(event.key)
           setValues((prevValues) => {
             const newValues = prevValues.map((row) => [...row]);
-            newValues[hoveredCell.row][hoveredCell.col] = event.key;
+            newValues[clickedCell.row][clickedCell.col] = event.key;
             return newValues;
           });
         }
@@ -43,7 +43,7 @@ function App() {
           if (event.key === "Backspace" || event.key === "Delete") {
             setValues((prevValues) => {
               const newValues = prevValues.map((row) => [...row]);
-              newValues[hoveredCell.row][hoveredCell.col] = "";
+              newValues[clickedCell.row][clickedCell.col] = "";
               return newValues;
             });
           }
@@ -53,36 +53,50 @@ function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [hoveredCell])
+  }, [clickedCell])
 
   return (
     <>
       <h1>Partition</h1>
-      <div className="grid_container" style={{width: "450px", height: "450px", aspectRatio: 1 / 1, display: "grid", gridTemplateRows: "repeat(9, 1fr)", border: "2px solid black"}}>
-        {partition.map((row, rowIndex) => (
-          <div key={rowIndex} className="grid_row" style={{display: "grid", gridTemplateColumns: "repeat(9, 1fr)"}}>
-            {row.map((_, columnIndex) => (
-              <div 
-                  key={`${rowIndex}-${columnIndex}`}
-                  className="grid_cell"
-                  onMouseEnter={() => setHoveredCell({ row: rowIndex, col: columnIndex, part: partition[rowIndex][columnIndex]})}
-                  onMouseLeave={() => setHoveredCell(null)}
-                  style={{
-                    display: "flex",
-                    width: "100%",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    boxSizing: "border-box",
-                    backgroundColor: (hoveredCell?.row === rowIndex || hoveredCell?.col === columnIndex || hoveredCell?.part === partition[rowIndex][columnIndex]) ? "rgba(0, 0, 0, 0.1)" : "white",
-                    borderLeft: (columnIndex === 0 || partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex - 1]) ? "2px solid rgba(0, 0, 0, 1)" : "2px solid rgba(0, 0, 0, 0.2)",
-                    borderRight: (columnIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex + 1]) ? "2px solid rgba(0, 0, 0, 1)" : "2px solid rgba(0, 0, 0, 0.2)", 
-                    borderTop: (rowIndex === 0 || partition[rowIndex][columnIndex] !== partition[rowIndex - 1][columnIndex]) ? "2px solid rgba(0, 0, 0, 1)" : "2px solid rgba(0, 0, 0, 0.2)",
-                    borderBottom: (rowIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex + 1][columnIndex]) ? "2px solid rgba(0, 0, 0, 1)" : "2px solid rgba(0, 0, 0, 0.2)"}}>
-                {values[rowIndex][columnIndex]}
-              </div>
-            ))}
-          </div>
-        ))}
+      <div className="game_container" style={{width: "min(90vmin, 450px)", maxWidth: "100%", maxHeight: "100%", display: "grid"}}>
+        <div className="grid_container" style={{aspectRatio: 1 / 1, display: "grid", gridTemplateRows: "repeat(9, 1fr)", border: "4px solid black"}}>
+          {partition.map((row, rowIndex) => (
+            <div key={rowIndex} className="grid_row" style={{display: "grid", gridTemplateColumns: "repeat(9, 1fr)"}}>
+              {row.map((_, columnIndex) => (
+                <div 
+                    key={`${rowIndex}-${columnIndex}`}
+                    className="grid_cell"
+                    onMouseEnter={() => setHoveredCell({row: rowIndex, col: columnIndex, part: partition[rowIndex][columnIndex]})}
+                    onMouseLeave={() => setHoveredCell(null)}
+                    onMouseDown={() => setClickedCell({row: rowIndex, col: columnIndex})}
+                    style={{
+                      display: "flex",
+                      width: "100%",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxSizing: "border-box",  
+                      backgroundColor: (clickedCell?.row === rowIndex && clickedCell.col === columnIndex) ? "rgb(255, 223, 17)" : ((hoveredCell?.row === rowIndex || hoveredCell?.col === columnIndex || hoveredCell?.part === partition[rowIndex][columnIndex]) ? "rgba(0, 0, 0, 0.1)" : "white"),
+                      borderLeft: (columnIndex === 0 || partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex - 1]) ? "1px solid rgba(0, 0, 0, 1)" : "1px solid rgba(0, 0, 0, 0.2)",
+                      borderRight: (columnIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex + 1]) ? "1px solid rgba(0, 0, 0, 1)" : "1px solid rgba(0, 0, 0, 0.2)", 
+                      borderTop: (rowIndex === 0 || partition[rowIndex][columnIndex] !== partition[rowIndex - 1][columnIndex]) ? "1px solid rgba(0, 0, 0, 1)" : "1px solid rgba(0, 0, 0, 0.2)",
+                      borderBottom: (rowIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex + 1][columnIndex]) ? "1px solid rgba(0, 0, 0, 1)" : "1px solid rgba(0, 0, 0, 0.2)"}}>
+                  {values[rowIndex][columnIndex]}
+                </div>
+              ))}
+            </div>
+          ))}
+          
+        </div>
+        <div style={{display: "grid", gridTemplateColumns: "repeat(5, 1fr)", paddingTop: "20px", paddingBottom: "20px", gap: "10px"}}>
+          {Array.from({length: 9}).map((_, index) => (
+            <button key={index + 1} onClick={() => setValues((prevValues) => {const newValues = prevValues.map((row) => [...row]); newValues[clickedCell.row][clickedCell.col] = `${index + 1}`; return newValues;})} style={{padding: "15px", fontSize: "16px", border: "1px solid gray"}}>
+              {index + 1}
+            </button>
+          ))}
+          <button key="delete" onClick={() => setValues((prevValues) => {const newValues = prevValues.map((row) => [...row]); newValues[clickedCell.row][clickedCell.col] = ""; return newValues;})} style={{padding: "15px", fontSize: "16px", border: "1px solid gray"}}>
+            Delete
+          </button>
+        </div>
       </div>
     </>
   )
