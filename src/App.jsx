@@ -16,6 +16,11 @@ const partition = [
 function App() {
   const [hoveredCell, setHoveredCell] = useState({row: null, col: null, part: null});
   const [clickedCell, setClickedCell] = useState({row: null, col: null, part: null})
+  const thickBorder = window.matchMedia('(prefers-color-scheme: dark)').matches ? "1px solid rgba(219, 219, 219, 1)" : "1px solid rgba(36, 36, 36, 1)"
+  const thinBorder = window.matchMedia('(prefers-color-scheme: dark)').matches ? "1px solid rgba(219, 219, 219, 0.2)" : "1px solid rgba(36, 36, 36, 0.2)"
+  const relatedBackground = window.matchMedia('(prefers-color-scheme: dark)').matches ? "rgba(219, 219, 219, 0.1)" : "rgba(36, 36, 36, 0.1)"
+  const defaultBackground = window.matchMedia('(prefers-color-scheme: dark)').matches ? "rgb(36, 36, 36)" : "white"
+  const highlightBackground = window.matchMedia('(prefers-color-scheme: dark)').matches ? "rgb(69, 17, 0)" : "rgb(255, 223, 17)"
 
   var [values, setValues] = useState([
     ["", "", "", "", "", "", "", "", ""],
@@ -59,7 +64,7 @@ function App() {
     <>
       <h1>Partition</h1>
       <div className="game_container" style={{width: "min(80vmin, 450px)", maxWidth: "100%", maxHeight: "100%", display: "grid"}}>
-        <div className="grid_container" style={{aspectRatio: 1 / 1, display: "grid", gridTemplateRows: "repeat(9, 1fr)", border: "4px solid black"}}>
+        <div className="grid_container" style={{aspectRatio: 1 / 1, display: "grid", gridTemplateRows: "repeat(9, 1fr)"}}>
           {partition.map((row, rowIndex) => (
             <div key={rowIndex} className="grid_row" style={{display: "grid", gridTemplateColumns: "repeat(9, 1fr)"}}>
               {row.map((_, columnIndex) => (
@@ -75,11 +80,11 @@ function App() {
                       alignItems: "center",
                       justifyContent: "center",
                       boxSizing: "border-box",  
-                      backgroundColor: (clickedCell?.row === rowIndex && clickedCell.col === columnIndex) ? "rgb(255, 223, 17)" : ((hoveredCell?.row === rowIndex || hoveredCell?.col === columnIndex || hoveredCell?.part === partition[rowIndex][columnIndex]) ? "rgba(0, 0, 0, 0.1)" : "white"),
-                      borderLeft: (columnIndex === 0 || partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex - 1]) ? "1px solid rgba(0, 0, 0, 1)" : "1px solid rgba(0, 0, 0, 0.2)",
-                      borderRight: (columnIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex + 1]) ? "1px solid rgba(0, 0, 0, 1)" : "1px solid rgba(0, 0, 0, 0.2)", 
-                      borderTop: (rowIndex === 0 || partition[rowIndex][columnIndex] !== partition[rowIndex - 1][columnIndex]) ? "1px solid rgba(0, 0, 0, 1)" : "1px solid rgba(0, 0, 0, 0.2)",
-                      borderBottom: (rowIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex + 1][columnIndex]) ? "1px solid rgba(0, 0, 0, 1)" : "1px solid rgba(0, 0, 0, 0.2)"}}>
+                      backgroundColor: (clickedCell?.row === rowIndex && clickedCell.col === columnIndex) ? highlightBackground : ((hoveredCell?.row === rowIndex || hoveredCell?.col === columnIndex || hoveredCell?.part === partition[rowIndex][columnIndex]) ? relatedBackground : defaultBackground),
+                      borderLeft: (columnIndex === 0 || partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex - 1]) ? thickBorder : thinBorder,
+                      borderRight: (columnIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex + 1]) ? thickBorder : thinBorder,
+                      borderTop: (rowIndex === 0 || partition[rowIndex][columnIndex] !== partition[rowIndex - 1][columnIndex]) ? thickBorder : thinBorder,
+                      borderBottom: (rowIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex + 1][columnIndex]) ? thickBorder : thinBorder}}>
                   {values[rowIndex][columnIndex]}
                 </div>
               ))}
