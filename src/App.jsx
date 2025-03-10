@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import './App.css'
 
 const partition = [
@@ -44,51 +44,59 @@ function App() {
   ))
   var [writeMode, setWriteMode] = useState("normal")
 
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (clickedCell.row !== null) {
-        if (problem[clickedCell.row][clickedCell.col] === 0){
-          if (event.key >= "1" && event.key <= "9"){
-            if (writeMode === "normal") {
-              setValues((prevValues) => {
-                const newValues = prevValues.map((row) => [...row]);
-                newValues[clickedCell.row][clickedCell.col] = event.key;
-                return newValues;
-              });
-            }
-            else {
-              if (Array.isArray(values[clickedCell.row][clickedCell.col])) {
-                if (values[clickedCell.row][clickedCell.col][parseInt(event.key, 10) - 1] === "") {
-                  values[clickedCell.row][clickedCell.col][parseInt(event.key, 10) - 1] = event.key
+  const collide = (() => {
+    let collideList = [];
+    
+    for (let i = 0; i < 9; i++) {
+      for (let j = 0; j < 9; j++) {
+        if (!Array.isArray(values[i][j]) && values[i][j] !== "") {
+          for (let x = i; x < 9; x++) {
+            for (let y = 0; y < 9; y++) {
+              if ((i !== x || j !== y) && !Array.isArray(values[x][y]) && (i === x || j === y || partition[i][j] === partition[x][y]) && values[i][j] === values[x][y]) {
+                if (!collideList.some(([r, c]) => r === i && c === j)) {
+                  collideList.push([i, j]);
                 }
-                else {
-                  values[clickedCell.row][clickedCell.col][parseInt(event.key, 10) - 1] = ""
+                if (!collideList.some(([r, c]) => r === x && c === y)) {
+                  collideList.push([x, y]);
                 }
               }
-              else {
-                if (values[clickedCell.row][clickedCell.col] === "") {
-                  values[clickedCell.row][clickedCell.col] = Array(9).fill("")
-                  values[clickedCell.row][clickedCell.col][parseInt(event.key, 10) - 1] = event.key
-                }
-              }
-            }
-          }
-          else {
-            if (event.key === "Backspace" || event.key === "Delete") {
-              setValues((prevValues) => {
-                const newValues = prevValues.map((row) => [...row]);
-                newValues[clickedCell.row][clickedCell.col] = "";
-                return newValues;
-              });
             }
           }
         }
       }
     }
+  
+    return collideList;
+  })();
+  
 
+  const handleKeyDown = useCallback((event) => {
+    if (clickedCell.row !== null && problem[clickedCell.row][clickedCell.col] === 0) {
+      const newValues = [...values]; // 얕은 복사로 불필요한 깊은 복사 방지
+      const cellValue = newValues[clickedCell.row][clickedCell.col];
+  
+      if (event.key >= "1" && event.key <= "9") {
+        if (writeMode === "normal") {
+          newValues[clickedCell.row][clickedCell.col] = event.key;
+        } else {
+          if (!Array.isArray(cellValue)) {
+            newValues[clickedCell.row][clickedCell.col] = Array(9).fill("");
+          }
+          newValues[clickedCell.row][clickedCell.col][parseInt(event.key, 10) - 1] =
+            newValues[clickedCell.row][clickedCell.col][parseInt(event.key, 10) - 1] === "" ? event.key : "";
+        }
+        setValues(newValues);
+      } else if (event.key === "Backspace" || event.key === "Delete") {
+        newValues[clickedCell.row][clickedCell.col] = "";
+        setValues(newValues);
+      }
+    }
+  }, [clickedCell, writeMode, values]);
+  
+  useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [clickedCell, writeMode, values])
+  }, [handleKeyDown]);
 
   return (
     <>
@@ -111,12 +119,14 @@ function App() {
                     gridTemplateRows: "repeat(3, 1fr)",
                     gridTemplateColumns: "repeat(3, 1fr)",
                     boxSizing: "border-box",
+                    color: problem[rowIndex][columnIndex] === 0 ? playerFontColor : problemFontColor,
                     backgroundColor: (clickedCell?.row === rowIndex && clickedCell.col === columnIndex) ? highlightBackground : ((hoveredCell?.row === rowIndex || hoveredCell?.col === columnIndex || hoveredCell?.part === partition[rowIndex][columnIndex]) ? relatedBackground : defaultBackground),
                     borderLeft: (columnIndex === 0 || partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex - 1]) ? thickBorder : thinBorder,
                     borderRight: (columnIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex + 1]) ? thickBorder : thinBorder,
                     borderTop: (rowIndex === 0 || partition[rowIndex][columnIndex] !== partition[rowIndex - 1][columnIndex]) ? thickBorder : thinBorder,
                     borderBottom: (rowIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex + 1][columnIndex]) ? thickBorder : thinBorder,
-                    transition: "0.25s"}}>
+                    transition: "0.25s",
+                    position: "relative"}}>
                   {values[rowIndex][columnIndex].map((value, index) => (
                     <div 
                       key={`${rowIndex}-${columnIndex}-${index}`}
@@ -127,7 +137,7 @@ function App() {
                         alignItems: "center",
                         justifyContent: "center",
                         boxSizing: "border-box",
-                        fontSize: "min(1.42vmin, 8px)",
+                        fontSize: "min(1.78vmin, 10px)",
                         fontWeight: "normal",
                         color: playerFontColor,
                         transition: "0.25s"}}>
@@ -155,8 +165,20 @@ function App() {
                       fontSize: "min(4.27vmin, 24px)",
                       fontWeight: "bold",
                       color: problem[rowIndex][columnIndex] === 0 ? playerFontColor : problemFontColor,
-                      transition: "0.25s"}}>
+                      transition: "background-color 0.25s, color 0.25s, border-color 0.25s",
+                      position: "relative"}}>
                   {values[rowIndex][columnIndex]}
+                  {collide.some(([r, c]) => r === rowIndex && c === columnIndex) && (
+                    <span style={{
+                      position: "absolute", 
+                      top: "min(0.53vmin, 3px)", 
+                      right: "min(0.53vmin, 3px)", 
+                      width: "min(0.89vmin, 5px)", 
+                      height: "min(0.89vmin, 5px)",
+                      backgroundColor: "red", 
+                      borderRadius: "50%"
+                    }}></span>
+                  )}
                 </div>
               ))}
             </div>
@@ -187,16 +209,28 @@ function App() {
                     else {
                       if (Array.isArray(values[clickedCell.row][clickedCell.col])) {
                         if (values[clickedCell.row][clickedCell.col][index] === "") {
-                          values[clickedCell.row][clickedCell.col][index] = `${index + 1}`
+                          setValues((prevValues) => {
+                            const newValues = prevValues.map((row) => [...row]);
+                            newValues[clickedCell.row][clickedCell.col][index] = `${index + 1}`;
+                            return newValues;
+                          });
                         }
                         else {
-                          values[clickedCell.row][clickedCell.col][index] = ""
+                          setValues((prevValues) => {
+                            const newValues = prevValues.map((row) => [...row]);
+                            newValues[clickedCell.row][clickedCell.col][index] = "";
+                            return newValues;
+                          });
                         }
                       }
                       else {
                         if (values[clickedCell.row][clickedCell.col] === "") {
-                          values[clickedCell.row][clickedCell.col] = Array(9).fill("")
-                          values[clickedCell.row][clickedCell.col][index] = `${index + 1}`
+                          setValues((prevValues) => {
+                            const newValues = prevValues.map((row) => [...row]);
+                            newValues[clickedCell.row][clickedCell.col] = Array(9).fill("");
+                            newValues[clickedCell.row][clickedCell.col][index] = `${index + 1}`
+                            return newValues;
+                          });
                         }
                       }
                     }
