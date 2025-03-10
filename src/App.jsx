@@ -79,7 +79,7 @@ function App() {
         if (writeMode === "normal") {
           newValues[clickedCell.row][clickedCell.col] = event.key;
         } else {
-          if (!Array.isArray(cellValue)) {
+          if (!Array.isArray(cellValue) && cellValue === "") {
             newValues[clickedCell.row][clickedCell.col] = Array(9).fill("");
           }
           newValues[clickedCell.row][clickedCell.col][parseInt(event.key, 10) - 1] =
