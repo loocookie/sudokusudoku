@@ -29,7 +29,7 @@ function App() {
 
   const [hoveredCell, setHoveredCell] = useState({row: null, col: null, part: null});
   const [clickedCell, setClickedCell] = useState({row: null, col: null, part: null})
-  const outlineBorder = theme === "dark" ? "min(0.71vmin, 4px) solid rgb(219, 219, 219)" : "min(0.71vmin, 4px) solid rgb(36, 36, 36)"
+  const outlineBorder = theme === "dark" ? "min(1.07vmin, 6px) solid rgb(219, 219, 219)" : "min(1.07vmin, 6px) solid rgb(36, 36, 36)"
   const thickBorder = theme === "dark" ? "min(0.36vmin, 2px) solid rgb(219, 219, 219)" : "min(0.36vmin, 2px) solid rgb(36, 36, 36)"
   const thinBorder = theme === "dark" ? "min(0.36vmin, 2px) solid rgb(60, 60, 60)" : "min(0.36vmin, 2px) solid rgb(231, 231, 231)"
   const relatedBackground = theme === "dark" ? "rgb(84, 84, 84)" : "rgb(207, 207, 207)"
@@ -121,7 +121,7 @@ function App() {
     <>
       <h1 style={{color: problemFontColor}}>Fractured Sudoku</h1>
       <div className="game_container" style={{width: "min(80vmin, 450px)", maxWidth: "100%", maxHeight: "100%", display: "grid"}}>
-        <div className="grid_container" style={{aspectRatio: 1 / 1, display: "grid", gridTemplateRows: "repeat(9, 1fr)", border: outlineBorder, transition: "0.25s"}}>
+        <div className="grid_container" style={{aspectRatio: 1 / 1, display: "grid", gridTemplateRows: "repeat(9, 1fr)", border: outlineBorder, transition: "0.25s", borderRadius: "min(3.2vmin, 18px)", overflow: "hidden"}}>
           {partition.map((row, rowIndex) => (
             <div key={rowIndex} className="grid_row" style={{display: "grid", gridTemplateColumns: "repeat(9, 1fr)"}}>
               {row.map((_, columnIndex) => (
@@ -140,10 +140,10 @@ function App() {
                     boxSizing: "border-box",
                     color: problem[rowIndex][columnIndex] === 0 ? playerFontColor : problemFontColor,
                     backgroundColor: (clickedCell?.row === rowIndex && clickedCell.col === columnIndex) ? highlightBackground : ((hoveredCell?.row === rowIndex || hoveredCell?.col === columnIndex || hoveredCell?.part === partition[rowIndex][columnIndex]) ? relatedBackground : defaultBackground),
-                    borderLeft: (columnIndex === 0 || partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex - 1]) ? thickBorder : thinBorder,
-                    borderRight: (columnIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex + 1]) ? thickBorder : thinBorder,
-                    borderTop: (rowIndex === 0 || partition[rowIndex][columnIndex] !== partition[rowIndex - 1][columnIndex]) ? thickBorder : thinBorder,
-                    borderBottom: (rowIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex + 1][columnIndex]) ? thickBorder : thinBorder,
+                    borderLeft: columnIndex === 0 ? "none" : (partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex - 1]) ? thickBorder : thinBorder,
+                    borderRight: columnIndex === 8 ? "none" : (partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex + 1]) ? thickBorder : thinBorder,
+                    borderTop: rowIndex === 0 ? "none" : (partition[rowIndex][columnIndex] !== partition[rowIndex - 1][columnIndex]) ? thickBorder : thinBorder,
+                    borderBottom: rowIndex === 8 ? "none" : (partition[rowIndex][columnIndex] !== partition[rowIndex + 1][columnIndex]) ? thickBorder : thinBorder,
                     transition: "0.25s",
                     position: "relative"}}>
                   {values[rowIndex][columnIndex].map((value, index) => (
@@ -177,10 +177,10 @@ function App() {
                       justifyContent: "center",
                       boxSizing: "border-box",  
                       backgroundColor: (clickedCell?.row === rowIndex && clickedCell.col === columnIndex) ? highlightBackground : ((hoveredCell?.row === rowIndex || hoveredCell?.col === columnIndex || hoveredCell?.part === partition[rowIndex][columnIndex]) ? relatedBackground : defaultBackground),
-                      borderLeft: (columnIndex === 0 || partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex - 1]) ? thickBorder : thinBorder,
-                      borderRight: (columnIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex + 1]) ? thickBorder : thinBorder,
-                      borderTop: (rowIndex === 0 || partition[rowIndex][columnIndex] !== partition[rowIndex - 1][columnIndex]) ? thickBorder : thinBorder,
-                      borderBottom: (rowIndex === 8 || partition[rowIndex][columnIndex] !== partition[rowIndex + 1][columnIndex]) ? thickBorder : thinBorder,
+                      borderLeft: columnIndex === 0 ? "none" : (partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex - 1]) ? thickBorder : thinBorder,
+                      borderRight: columnIndex === 8 ? "none" : (partition[rowIndex][columnIndex] !== partition[rowIndex][columnIndex + 1]) ? thickBorder : thinBorder,
+                      borderTop: rowIndex === 0 ? "none" : (partition[rowIndex][columnIndex] !== partition[rowIndex - 1][columnIndex]) ? thickBorder : thinBorder,
+                      borderBottom: rowIndex === 8 ? "none" : (partition[rowIndex][columnIndex] !== partition[rowIndex + 1][columnIndex]) ? thickBorder : thinBorder,
                       fontSize: "min(4.27vmin, 24px)",
                       fontWeight: "bold",
                       color: problem[rowIndex][columnIndex] === 0 ? playerFontColor : problemFontColor,
