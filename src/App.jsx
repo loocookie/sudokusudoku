@@ -29,7 +29,7 @@ function App() {
 
   const [hoveredCell, setHoveredCell] = useState({row: null, col: null, part: null});
   const [clickedCell, setClickedCell] = useState({row: null, col: null, part: null})
-  const outlineBorder = theme === "dark" ? "min(1.07vmin, 6px) solid rgb(219, 219, 219)" : "min(1.07vmin, 6px) solid rgb(36, 36, 36)"
+  const outlineBorder = theme === "dark" ? "min(0.71vmin, 4px) solid rgb(219, 219, 219)" : "min(0.71vmin, 4px) solid rgb(36, 36, 36)"
   const thickBorder = theme === "dark" ? "min(0.36vmin, 2px) solid rgb(219, 219, 219)" : "min(0.36vmin, 2px) solid rgb(36, 36, 36)"
   const thinBorder = theme === "dark" ? "min(0.36vmin, 2px) solid rgb(60, 60, 60)" : "min(0.36vmin, 2px) solid rgb(231, 231, 231)"
   const relatedBackground = theme === "dark" ? "rgb(84, 84, 84)" : "rgb(207, 207, 207)"
