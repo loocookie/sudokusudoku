@@ -1,8 +1,4 @@
-import {Node} from "./nodeClass"
-import {Column} from "./columnClass"
-
-
-class DLX {
+export class DLX {
     constructor (root) {
         this.root = root;
         let cnt = 0;
@@ -96,7 +92,7 @@ class DLX {
 
             this.search(k + 1);
 
-            r = self.o[k];
+            r = this.o[k];
             c = r.c;
 
             j = r.l;
@@ -108,6 +104,6 @@ class DLX {
             r = r.d;
         }
 
-        self.uncover_column(c);
+        this.uncover_column(c);
     }
 }

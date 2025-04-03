@@ -1,6 +1,6 @@
 import {Node} from "./nodeClass"
 
-class Column extends Node {
+export class Column extends Node {
     constructor (name) {
         super(null);
         this.c = this;
@@ -8,5 +8,3 @@ class Column extends Node {
         this.name = name;
     }
 }
-
-export default Column;

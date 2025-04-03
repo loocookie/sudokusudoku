@@ -1,4 +1,4 @@
-class Node {
+export class Node {
     constructor(c){
         this.u = this;
         this.d = this;
@@ -7,5 +7,3 @@ class Node {
         this.c = c;
     }
 }
-
-export default Node;
