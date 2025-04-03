@@ -24,6 +24,9 @@ const problem = [
   [0, 2, 0, 5, 0, 9, 0, 0, 0]
 ]
 
+const date = new Date().toISOString().slice(0, 10);
+console.log(date)
+
 function App() {
   var [theme, setTheme] = useState(window.matchMedia('(prefers-color-scheme: dark)').matches ? "dark" : "light")
 
