@@ -109,6 +109,7 @@ function App() {
   const [deleted, setDeleted] = useState(emptyDeleted)
   const [writeMode, setWriteMode] = useState("normal")
   const [autoMode, setAutoMode] = useState(false)
+  const [solution, setSolution] = useState(null)
 
   const outlineBorder = theme === "dark" ? "4px solid rgb(219, 219, 219)" : "4px solid rgb(36, 36, 36)"
   const thickBorderColor = theme === "dark" ? "rgb(219, 219, 219)" : "rgb(36, 36, 36)"
@@ -123,9 +124,10 @@ function App() {
   useEffect(() => {
     if (!difficulty) return
 
-    const applyPuzzle = (part, prob) => {
+    const applyPuzzle = (part, prob, sol) => {
       setPartition(part)
       setProblem(prob)
+      setSolution(sol)
       initStorage(difficulty, prob)
       const { vals, marks } = loadGameState(difficulty)
       setValues(vals)
@@ -134,8 +136,8 @@ function App() {
 
     fetch(`/puzzles/${difficulty}/${today}.json`)
       .then(r => r.json())
-      .then(data => applyPuzzle(data.partition, data.puzzle))
-      .catch(() => applyPuzzle(DEFAULT_PARTITION, DEFAULT_PROBLEM))
+      .then(data => applyPuzzle(data.partition, data.puzzle, data.solution))
+      .catch(() => applyPuzzle(DEFAULT_PARTITION, DEFAULT_PROBLEM, null))
   }, [difficulty])
 
   const handleDifficultySelect = (diff) => {
@@ -231,6 +233,8 @@ function App() {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [handleKeyDown])
 
+  const cleared = !!solution && values.every((row, i) => row.every((v, j) => v === `${solution[i][j]}`))
+
   if (screen === "menu") {
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", gap: "16px", backgroundColor: defaultBackground }}>
@@ -289,7 +293,8 @@ function App() {
                       boxSizing: "border-box",
                       backgroundColor: cellBg(partition[rowIndex][columnIndex], bgState, theme),
                       transition: "0.25s",
-                      position: "relative"
+                      position: "relative",
+                      animation: cleared ? `cellClear 0.6s ease ${(rowIndex + columnIndex) * 40}ms both` : undefined
                     }}>
                     {dispCands.map((value, index) => (
                       <div
@@ -318,7 +323,8 @@ function App() {
                       fontWeight: "bold",
                       color: problem[rowIndex][columnIndex] === 0 ? playerFontColor : problemFontColor,
                       transition: "background-color 0.25s, color 0.25s, border-color 0.25s",
-                      position: "relative"
+                      position: "relative",
+                      animation: cleared ? `cellClear 0.6s ease ${(rowIndex + columnIndex) * 40}ms both` : undefined
                     }}>
                     {val}
                     {collide.some(([r, c]) => r === rowIndex && c === columnIndex) && (
@@ -335,6 +341,11 @@ function App() {
             {[...Array(8)].flatMap((_, c) => [...Array(9)].flatMap((_, r) => partition[r][c] !== partition[r][c + 1] ? [<line key={`V-${r}-${c}`} x1={c + 1} y1={r} x2={c + 1} y2={r + 1} stroke={thickBorderColor} strokeWidth="4" vectorEffect="non-scaling-stroke" />] : []))}
             {[...Array(9)].flatMap((_, c) => [...Array(8)].flatMap((_, r) => partition[r][c] !== partition[r + 1][c] ? [<line key={`H-${r}-${c}`} x1={c} y1={r + 1} x2={c + 1} y2={r + 1} stroke={thickBorderColor} strokeWidth="4" vectorEffect="non-scaling-stroke" />] : []))}
           </svg>
+          {cleared && (
+            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", backgroundColor: theme === "dark" ? "rgba(36,36,36,0.88)" : "rgba(255,255,255,0.88)", borderRadius: "inherit", zIndex: 10, animation: "overlayFadeIn 0.5s ease 1s both" }}>
+              <div style={{ color: problemFontColor, fontSize: "min(10vmin, 56px)", fontWeight: "bold", letterSpacing: "0.05em" }}>Clear!</div>
+            </div>
+          )}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", paddingTop: "20px", gap: "10px" }}>
           <button onClick={goToMenu} style={{ padding: "12px", color: problemFontColor, fontSize: "min(3.2vmin, 18px)", fontWeight: "bold", border: thinBorder, background: defaultBackground }}>
