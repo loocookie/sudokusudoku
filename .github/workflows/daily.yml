@@ -1,0 +1,28 @@
+name: Daily Puzzle Generation
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Generate puzzles
+        working-directory: scripts
+        run: python pick.py
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add public/puzzles/
+          git commit -m "Daily puzzles $(date +%Y-%m-%d)" || exit 0
+          git push
