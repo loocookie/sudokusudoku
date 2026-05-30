@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "PowerShell(node --version 2>&1)",
+      "PowerShell(npm --version 2>&1)"
+    ]
+  }
+}
