@@ -42,6 +42,10 @@ function storageKey(difficulty, i, j) {
   return `${difficulty}_${today}_${i},${j}`
 }
 
+function deletedStorageKey(difficulty, i, j) {
+  return `${difficulty}_${today}_del_${i},${j}`
+}
+
 function initStorage(difficulty, problem) {
   problem.forEach((row, i) => row.forEach((n, j) => {
     const key = storageKey(difficulty, i, j)
@@ -56,6 +60,7 @@ function initStorage(difficulty, problem) {
 function loadGameState(difficulty) {
   const vals = [...Array(9)].map(() => Array(9).fill(""))
   const marks = Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => Array(9).fill("")))
+  const dels = Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => Array(9).fill(false)))
   for (let i = 0; i < 9; i++) {
     for (let j = 0; j < 9; j++) {
       const v = localStorage.getItem(storageKey(difficulty, i, j)) ?? ""
@@ -64,9 +69,11 @@ function loadGameState(difficulty) {
       } else {
         vals[i][j] = v
       }
+      const dv = localStorage.getItem(deletedStorageKey(difficulty, i, j))
+      if (dv) dels[i][j] = JSON.parse(dv)
     }
   }
-  return { vals, marks }
+  return { vals, marks, dels }
 }
 
 function computeValid(r, c, vals, part) {
@@ -110,6 +117,7 @@ function App() {
   const [writeMode, setWriteMode] = useState("normal")
   const [autoMode, setAutoMode] = useState(false)
   const [solution, setSolution] = useState(null)
+  const [history, setHistory] = useState([])
 
   const outlineBorder = theme === "dark" ? "4px solid rgb(219, 219, 219)" : "4px solid rgb(36, 36, 36)"
   const thickBorderColor = theme === "dark" ? "rgb(219, 219, 219)" : "rgb(36, 36, 36)"
@@ -129,9 +137,11 @@ function App() {
       setProblem(prob)
       setSolution(sol)
       initStorage(difficulty, prob)
-      const { vals, marks } = loadGameState(difficulty)
+      const { vals, marks, dels } = loadGameState(difficulty)
       setValues(vals)
       setMarked(marks)
+      setDeleted(dels)
+      setHistory([])
     }
 
     fetch(`/puzzles/${difficulty}/${today}.json`)
@@ -148,12 +158,64 @@ function App() {
     setWriteMode("normal")
     setAutoMode(false)
     setDeleted(emptyDeleted())
+    setHistory([])
   }
 
   const goToMenu = () => {
     setScreen("menu")
     setProblem(null)
     setDifficulty(null)
+  }
+
+  const handleReset = () => {
+    if (!problem) return
+    const newValues = values.map((row, i) => row.map((_, j) => problem[i][j] !== 0 ? `${problem[i][j]}` : ""))
+    const newMarked = Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => Array(9).fill("")))
+    const newDels = emptyDeleted()
+    setValues(newValues)
+    setMarked(newMarked)
+    setDeleted(newDels)
+    setHistory([])
+    for (let i = 0; i < 9; i++) {
+      for (let j = 0; j < 9; j++) {
+        if (problem[i][j] !== 0) {
+          localStorage.setItem(storageKey(difficulty, i, j), `${problem[i][j]}`)
+        } else {
+          localStorage.setItem(storageKey(difficulty, i, j), "")
+          localStorage.removeItem(deletedStorageKey(difficulty, i, j))
+        }
+      }
+    }
+  }
+
+  const handleUndo = () => {
+    if (history.length === 0 || !problem) return
+    const prev = history[history.length - 1]
+    setHistory(h => h.slice(0, -1))
+    setValues(prev.values)
+    setMarked(prev.marks)
+    setDeleted(prev.dels)
+    for (let i = 0; i < 9; i++) {
+      for (let j = 0; j < 9; j++) {
+        if (problem[i][j] !== 0) continue
+        const key = storageKey(difficulty, i, j)
+        const dkey = deletedStorageKey(difficulty, i, j)
+        const v = prev.values[i][j]
+        const m = prev.marks[i][j]
+        if (v !== "") {
+          localStorage.setItem(key, v)
+        } else if (m.some(x => x !== "")) {
+          localStorage.setItem(key, JSON.stringify(m))
+        } else {
+          localStorage.setItem(key, "")
+        }
+        if (prev.dels[i][j].some(x => x)) {
+          localStorage.setItem(dkey, JSON.stringify(prev.dels[i][j]))
+        } else {
+          localStorage.removeItem(dkey)
+        }
+      }
+    }
   }
 
   const collide = (() => {
@@ -183,10 +245,16 @@ function App() {
 
     const key = storageKey(difficulty, r, c)
     const val = values[r][c]
+    const snap = () => ({
+      values: values.map(row => [...row]),
+      marks: marked.map(row => row.map(arr => [...arr])),
+      dels: deleted.map(row => row.map(arr => [...arr]))
+    })
 
     if (event.key >= "1" && event.key <= "9") {
       const n = parseInt(event.key, 10)
       if (writeMode === "normal") {
+        setHistory(h => [...h, snap()])
         const newValues = values.map(row => [...row])
         newValues[r][c] = event.key
         setValues(newValues)
@@ -197,10 +265,13 @@ function App() {
       } else {
         if (val !== "") return
         if (autoMode) {
+          setHistory(h => [...h, snap()])
           const newDel = deleted.map(row => row.map(arr => [...arr]))
           newDel[r][c][n - 1] = !newDel[r][c][n - 1]
           setDeleted(newDel)
+          localStorage.setItem(deletedStorageKey(difficulty, r, c), JSON.stringify(newDel[r][c]))
         } else {
+          setHistory(h => [...h, snap()])
           const newMarked = marked.map(row => row.map(arr => [...arr]))
           newMarked[r][c][n - 1] = newMarked[r][c][n - 1] === "" ? event.key : ""
           setMarked(newMarked)
@@ -209,16 +280,20 @@ function App() {
       }
     } else if (event.key === "Backspace" || event.key === "Delete") {
       if (val !== "") {
+        setHistory(h => [...h, snap()])
         const newValues = values.map(row => [...row])
         newValues[r][c] = ""
         setValues(newValues)
         localStorage.setItem(key, "")
       } else {
         if (autoMode) {
+          setHistory(h => [...h, snap()])
           const newDel = deleted.map(row => row.map(arr => [...arr]))
           newDel[r][c] = Array(9).fill(false)
           setDeleted(newDel)
+          localStorage.setItem(deletedStorageKey(difficulty, r, c), JSON.stringify(newDel[r][c]))
         } else {
+          setHistory(h => [...h, snap()])
           const newMarked = marked.map(row => row.map(arr => [...arr]))
           newMarked[r][c] = Array(9).fill("")
           setMarked(newMarked)
@@ -234,6 +309,9 @@ function App() {
   }, [handleKeyDown])
 
   const cleared = !!solution && values.every((row, i) => row.every((v, j) => v === `${solution[i][j]}`))
+
+  const btnStyle = { padding: "12px", color: problemFontColor, fontSize: "min(3.2vmin, 18px)", fontWeight: "bold", border: thinBorder, background: defaultBackground, cursor: "pointer" }
+  const iconBtnStyle = { width: "min(9vmin, 44px)", height: "min(9vmin, 44px)", border: null, background: defaultBackground, color: problemFontColor, fontSize: "min(5vmin, 22px)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }
 
   if (screen === "menu") {
     return (
@@ -260,9 +338,15 @@ function App() {
   }
 
   return (
-    <>
-      <h1 style={{ color: problemFontColor }}>Mosaic Sudoku</h1>
-      <div className="game_container" style={{ width: "min(80vmin, 450px)", maxWidth: "100%", maxHeight: "100%", display: "grid" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minHeight: "100vh", backgroundColor: defaultBackground, padding: "0 12px" }}>
+      <h1 style={{ color: problemFontColor, margin: "16px 0 4px 0" }}>Mosaic Sudoku</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "min(80vmin, 450px)", maxWidth: "100%", paddingBottom: "12px", paddingTop: "12px" }}>
+        <button onClick={goToMenu} style={iconBtnStyle}>🡸</button>
+        <button onClick={() => setTheme(t => t === "light" ? "dark" : "light")} style={iconBtnStyle}>
+          {theme === "light" ? "☀" : "⏾"}
+        </button>
+      </div>
+      <div style={{ width: "min(80vmin, 450px)", maxWidth: "100%", display: "flex", flexDirection: "column", gap: "10px" }}>
         <div className="grid_container" style={{ aspectRatio: 1 / 1, display: "grid", gridTemplateRows: "repeat(9, 1fr)", gridTemplateColumns: "1fr", position: "relative", outline: outlineBorder, transition: "0.25s", borderRadius: "min(3.2vmin, 18px)", overflow: "hidden" }}>
           {partition.map((row, rowIndex) => (
             <div key={rowIndex} className="grid_row" style={{ display: "grid", gridTemplateColumns: "repeat(9, 1fr)" }}>
@@ -347,23 +431,18 @@ function App() {
             </div>
           )}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", paddingTop: "20px", gap: "10px" }}>
-          <button onClick={goToMenu} style={{ padding: "12px", color: problemFontColor, fontSize: "min(3.2vmin, 18px)", fontWeight: "bold", border: thinBorder, background: defaultBackground }}>
-            Menu
-          </button>
-          <button onClick={() => setTheme(t => t === "light" ? "dark" : "light")} style={{ padding: "12px", color: problemFontColor, fontSize: "min(3.2vmin, 18px)", fontWeight: "bold", border: thinBorder, background: defaultBackground }}>
-            {theme === "light" ? "Light" : "Dark"}
-          </button>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", paddingTop: "10px", gap: "10px" }}>
-          <button onClick={() => setWriteMode(m => m === "normal" ? "candidate" : "normal")} style={{ padding: "12px", color: problemFontColor, fontSize: "min(3.2vmin, 18px)", fontWeight: "bold", border: thinBorder, background: defaultBackground }}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "10px", marginTop: "10px" }}>
+          <button onClick={() => setWriteMode(m => m === "normal" ? "candidate" : "normal")} style={btnStyle}>
             {writeMode === "normal" ? "Normal mode" : "Candidate mode"}
           </button>
-          <button onClick={() => setAutoMode(m => !m)} style={{ padding: "12px", color: autoMode ? defaultBackground : problemFontColor, fontSize: "min(3.2vmin, 18px)", fontWeight: "bold", border: thinBorder, background: autoMode ? problemFontColor : defaultBackground }}>
-            Auto candidate
+          <button onClick={handleUndo} style={{ ...btnStyle, opacity: history.length === 0 ? 0.35 : 1 }}>
+            Undo
+          </button>
+          <button onClick={handleReset} style={btnStyle}>
+            Reset
           </button>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", paddingTop: "20px", paddingBottom: "20px", gap: "10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", paddingBottom: "20px", gap: "10px" }}>
           {Array.from({ length: 9 }).map((_, index) => (
             <button
               key={index + 1}
@@ -372,7 +451,13 @@ function App() {
                 const r = clickedCell.row, c = clickedCell.col
                 const key = storageKey(difficulty, r, c)
                 const val = values[r][c]
+                const snap = {
+                  values: values.map(row => [...row]),
+                  marks: marked.map(row => row.map(arr => [...arr])),
+                  dels: deleted.map(row => row.map(arr => [...arr]))
+                }
                 if (writeMode === "normal") {
+                  setHistory(h => [...h, snap])
                   const next = values.map(row => [...row])
                   next[r][c] = `${index + 1}`
                   setValues(next)
@@ -383,10 +468,13 @@ function App() {
                 } else {
                   if (val !== "") return
                   if (autoMode) {
+                    setHistory(h => [...h, snap])
                     const newDel = deleted.map(row => row.map(arr => [...arr]))
                     newDel[r][c][index] = !newDel[r][c][index]
                     setDeleted(newDel)
+                    localStorage.setItem(deletedStorageKey(difficulty, r, c), JSON.stringify(newDel[r][c]))
                   } else {
+                    setHistory(h => [...h, snap])
                     const next = marked.map(row => row.map(arr => [...arr]))
                     next[r][c][index] = next[r][c][index] === "" ? `${index + 1}` : ""
                     setMarked(next)
@@ -394,7 +482,7 @@ function App() {
                   }
                 }
               }}
-              style={{ padding: "12px", color: problemFontColor, fontSize: "min(3.2vmin, 18px)", fontWeight: "bold", border: thinBorder, background: defaultBackground }}>
+              style={btnStyle}>
               {index + 1}
             </button>
           ))}
@@ -403,17 +491,26 @@ function App() {
               if (clickedCell.row === null || problem[clickedCell.row][clickedCell.col] !== 0) return
               const r = clickedCell.row, c = clickedCell.col
               const val = values[r][c]
+              const snap = {
+                values: values.map(row => [...row]),
+                marks: marked.map(row => row.map(arr => [...arr])),
+                dels: deleted.map(row => row.map(arr => [...arr]))
+              }
               if (val !== "") {
+                setHistory(h => [...h, snap])
                 const next = values.map(row => [...row])
                 next[r][c] = ""
                 setValues(next)
                 localStorage.setItem(storageKey(difficulty, r, c), "")
               } else {
                 if (autoMode) {
+                  setHistory(h => [...h, snap])
                   const newDel = deleted.map(row => row.map(arr => [...arr]))
                   newDel[r][c] = Array(9).fill(false)
                   setDeleted(newDel)
+                  localStorage.setItem(deletedStorageKey(difficulty, r, c), JSON.stringify(newDel[r][c]))
                 } else {
+                  setHistory(h => [...h, snap])
                   const next = marked.map(row => row.map(arr => [...arr]))
                   next[r][c] = Array(9).fill("")
                   setMarked(next)
@@ -421,12 +518,19 @@ function App() {
                 }
               }
             }}
-            style={{ padding: "12px", color: problemFontColor, fontSize: "min(3.2vmin, 18px)", fontWeight: "bold", border: thinBorder, background: defaultBackground }}>
+            style={btnStyle}>
             ⌫
           </button>
         </div>
+        <label style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer", paddingBottom: "20px", alignSelf: "flex-start" }}>
+          <input type="checkbox" checked={autoMode} onChange={e => setAutoMode(e.target.checked)} style={{ display: "none" }} />
+          <div style={{ width: "44px", height: "24px", borderRadius: "12px", background: autoMode ? problemFontColor : thinBorderColor, position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
+            <div style={{ position: "absolute", top: "2px", left: autoMode ? "22px" : "2px", width: "20px", height: "20px", borderRadius: "50%", background: autoMode ? defaultBackground : problemFontColor, transition: "left 0.2s" }} />
+          </div>
+          <span style={{ color: problemFontColor, fontSize: "min(3.2vmin, 18px)", fontWeight: "bold" }}>Auto candidate</span>
+        </label>
       </div>
-    </>
+    </div>
   )
 }
 
